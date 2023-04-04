@@ -1,9 +1,5 @@
 # Interfaces / Refactoring Teddy Bear Destruction
 
-- Now 3 different classes will broadcast the same event
-- Our invokers need to inherit from more than one class
-- We will use interfaces to do that
-
 # Interfaces Definition
 - Interfaces are classes in which all of its functions are pure virtual.
 - By making its functions pure virtual we are ensuring that its child classes implement all these functions. 
@@ -13,3 +9,15 @@
     - pure virtual / abstract functions are used when we need to create functions that we know must exist in the child classes but their implementaton varies according to each child class. Eg. All animals move but each type of animal move in a different way. Animals class has a Move() function. A bird can implement Move() by Move() { Fly() } a Fish by Move() { Swim() } and a Dog by Move() { Run() }. That's why they cannot be defined in the parent class, must be implemented in the child classes and must override the parent class. 
 
 
+# Exercise
+
+## Ingridients
+- An actor interface (parent class)
+- 3 Actors (child classes)
+- A HUD 
+- An Event Manager
+
+## Preparation
+- The Actor dies and the HUD increases the counts for actors killed
+- Actors broadcasts death > Event manager registers the actors as invokers and the Hud as a listener > Hud listens to kill event and decreases the count. 
+- Use the interface to define the functions actors should have (broadcast kill message). Actors inherit from Interface but implement functions differently. 
