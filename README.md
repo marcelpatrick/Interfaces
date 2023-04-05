@@ -21,3 +21,59 @@
 - The Actor dies and the HUD increases the counts for actors killed
 - Actors broadcasts death > Event manager registers the actors as invokers and the Hud as a listener > Hud listens to kill event and decreases the count. 
 - Use the interface to define the functions actors should have (broadcast kill message). Actors inherit from Interface but implement functions differently. 
+
+# Exercise:
+
+## Class Delegates Declarations
+- UObject
+- Declare all the delegates in this class
+
+
+## Class Event Manager / Interface
+- Unreal Class : Interface
+- Gets the event broadcasted when enemy is killed
+- Declare a pure virtual function GetKillEvent() to be implemented in the classes that inherit from this one
+
+
+## Class Enemy
+- AActor > also inherits from EventManagerInterface
+- Tag enemies
+
+- Header file
+  - Declare a delegate instance that will store the event to be called when enemy is killed
+  - Declare the GetKillEvent() function that will get the kill event and store it inside the delegate instance
+  
+- Implementation File
+  - Define the GetKillEvent() function
+  - Use the delegate instance and 
+
+
+## Class GameMode
+- AGameModeBase
+
+- Implementation file
+  - Find all enemy actors
+  - Iterate through all the enemies and Get the delegate instance from each one
+  - Use this delegate instance to bind to the function that increases the score
+  - Define the function that increases the score that will be called when the kill event occurs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
