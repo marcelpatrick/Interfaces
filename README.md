@@ -27,17 +27,23 @@
 ## Class Delegates Declarations
 - UObject
 - Declare all the delegates in this class
+- Declare a multicast delegate oneparam
 
 
 ## Class Event Manager / Interface
+- Declare a multicast delegate oneparam
 - Unreal Class : Interface
 - Gets the event broadcasted when enemy is killed
-- Declare a pure virtual function GetKillEvent() to be implemented in the classes that inherit from this one
+- Declare a pure virtual function GetKillEvent() that returns a delegate event
+  - This function needs to be implemented in the classes that inherit from this one
 
 
 ## Class Enemy
 - AActor > also inherits from EventManagerInterface
-- Tag enemies
+- Create enemy tag in project settings
+- Create a blueprint based on this class
+- Create an enemy tag inside this blueprint
+- #include EventManagerInterface.h
 
 - Header file
   - Declare a delegate instance that will store the event to be called when enemy is killed
