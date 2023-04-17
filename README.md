@@ -75,13 +75,115 @@ class INTERFACES_API UDelegateDeclarations : public UObject
   - Use the delegate object to broadcast the ScoreIncrease variable with the new score information
   - Call Send() on BeginPlay()
 
+```cpp
+
+#include "CoreMinimal.h"
+#include "GameFramework/Actor.h"
+#include "EventManagerInterface.h"
+#include "Engine/EngineTypes.h" 
+ 
+#include "Enemy.generated.h"
+
+UCLASS()
+class INTERFACES_API AEnemy : public AActor, public IEventManagerInterface
+{
+	GENERATED_BODY()
+	
+public:	
+	// Sets default values for this actor's properties
+	AEnemy();
+
+	void Send();
+
+	FEnemyKillEvent GetEnemyKillEvent() override;
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
+public:	
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+	FEnemyKillEvent KillEvent;
+
+	UPROPERTY(EditAnywhere)
+	int32 ScoreIncrease;
+
+	void StartTimer();
+
+private:
+	FTimerHandle MyTimerHandle; 
+
+
+};
+``` 
+
+```cpp
+
+#include "GameFramework/Actor.h"
+
+#include "Enemy.h"
+
+
+// Sets default values
+AEnemy::AEnemy()
+{
+ 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	PrimaryActorTick.bCanEverTick = true;
+
+}
+
+// Called when the game starts or when spawned
+void AEnemy::BeginPlay()
+{
+	Super::BeginPlay();
+
+	UE_LOG(LogTemp, Warning, TEXT("BEGIN PLAY ENEMY")); 
+
+	// TRIGGER TIMER:
+	StartTimer();
+
+}
+
+// Called every frame
+void AEnemy::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+}
+
+FEnemyKillEvent AEnemy::GetEnemyKillEvent()
+{
+	return KillEvent; 
+}
+
+void AEnemy::StartTimer()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Timer Started"));
+
+	GetWorldTimerManager().SetTimer(MyTimerHandle, this, &AEnemy::Send, 3, true);
+}
+
+void AEnemy::Send()
+{
+	
+	// BROADCAST:
+
+	KillEvent.AddLambda( [this](int32 ScoreIncrease) { 
+		UE_LOG(LogTemp, Warning, TEXT("The Score increased by: %i "), ScoreIncrease);  		
+		});
+
+	KillEvent.Broadcast(ScoreIncrease);
+}
+```
 
 - Create enemy tag in project settings
 - Create a blueprint based on this class
 - Create an enemy tag inside this blueprint
 
 
-## Listener Class MyGameMode
+## Listener Class: MyGameMode
 - Create a C++ class type AGameModeBase
 - On project settings switch the game mode from the standar game mode to MyGameMode.
 - This is the class that will implement the function OnEnemyKilled() that will listen to the event
@@ -97,6 +199,94 @@ class INTERFACES_API UDelegateDeclarations : public UObject
   - Use this delegate object to bind the delegate function to the listener function that increases the score
   - Define the OnEnemyKilled() function that increases the score and prints it and that will be called when the kill event occurs
 
+```cpp
+
+#include "CoreMinimal.h"
+#include "GameFramework/GameModeBase.h"
+#include "EventManagerInterface.h" 
+#include "Enemy.h"
+#include "MyGameMode.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class INTERFACES_API AMyGameMode : public AGameModeBase
+{
+	GENERATED_BODY()
+
+public:
+	AMyGameMode();
+
+	void OnEnemyKilled(int32 ScoreIncrease);
+
+protected:
+	virtual void BeginPlay() override;
+
+public:
+	UPROPERTY(EditAnywhere)
+	int32 CurrentScore;
+
+private:
+	AEnemy* MyEnemy;
+
+};
+
+```
+-
+```cpp
+
+#include "MyGameMode.h"
+#include "EngineUtils.h" 
+#include "Kismet/GameplayStatics.h" 
+#include "Enemy.h" 
+
+
+AMyGameMode::AMyGameMode()
+{
+    DefaultPawnClass = nullptr;
+}
+
+void AMyGameMode::BeginPlay()
+{
+    Super::BeginPlay();
+
+    UE_LOG(LogTemp, Warning, TEXT("BEGIN PLAY MY GAMEMODE")); 
+
+    // FIND:
+    TArray<AActor*> EnemyItr; 
+
+    UGameplayStatics::GetAllActorsWithTag(GetWorld(), "Enemy", EnemyItr); 
+
+    if (EnemyItr.Num() > 0)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("This is the Enemy: %s"), *EnemyItr[0]->GetName());
+
+        MyEnemy = Cast<AEnemy>(EnemyItr[0]);
+
+        FEnemyKillEvent KillEventAddress = MyEnemy->GetEnemyKillEvent();
+
+        UE_LOG(LogTemp, Warning, TEXT("This is the event address %p"), &KillEventAddress);
+
+        // BIND
+        KillEventAddress.AddUObject(this, &AMyGameMode::OnEnemyKilled);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("There is no enemy!!!"));
+        return; 
+    }
+
+}
+
+// RECEIVE:
+void AMyGameMode::OnEnemyKilled(int32 ScoreIncrease)
+{
+    CurrentScore += ScoreIncrease;
+
+    UE_LOG(LogTemp, Warning, TEXT("ENEMY KILLED - current score = %d"), CurrentScore);
+}
+```
 
 - Inpute a value in the field Score increase in the Enemy BP and for initial score in the GameMode BP
 
