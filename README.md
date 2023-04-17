@@ -26,37 +26,54 @@
 
 ## Class Delegates Declarations
 - Create a C++ class type UObject
-- This class will declare the Delegate that will fire the Event - Declare all the delegates in this class
+- This class will declare the Delegate that will fire the Kill Event - Declare all the delegates in this class
 
 - HeaderFile
   - Declare a multicast delegate oneparam. dont need to implement this. 
 
+```cpp
+DECLARE_MULTICAST_DELEGATE_OneParam(FEnemyKillEvent, int32);
+
+UCLASS()
+class INTERFACES_API UDelegateDeclarations : public UObject
+{
+	GENERATED_BODY()
+	
+};
+```
+
 
 ## Class Event Manager / Interface
 - Create a C++ class type Unreal Class : Interface
-- This class will declare the function that gets the event. 
+- This class will declare the function that gets the delegate object that be used to fire the kill event. 
+- This function will need to be implemented in the child classes Enemy
 
 - Header file
-  - Declare a pure virtual function GetKillEvent() that returns the kill event broadcasted by the delegate
+  - Declare a pure virtual function GetKillEvent() that returns the delegate object FEnemyKilled
     - Gets the event broadcasted when enemy is killed
     - This function doesn't need to be implemented in this class but must be implemented in the classes that inherit from this one because it's a pure virtual function
 
 
-## Class Enemy
+## Delegate Class: Enemy
 - Create a C++ class type AActor
-- This class will fire the event
-- This will be the class that will invoke / broadcast the kill event, therefore, this class should declare the event. Only classes containing the event can broadcast it. So insert the event inside the class that will trigger it. 
+- This class will inherit from the EventManagerInterface parent class
+- This class will get the delegate object with the function GetEnemyKillEvent() and use it to fire the kill event
+- This will be the class that will contain the delegate function Send() that will invoke / broadcast the kill event, therefore, this class should declare the delegate object FEnemyKillEvent in its header file. Only classes declaring the delegate object can use it to broadcast events. So insert the delegate object inside the class that will trigger the events. 
 
 - Header File
   - #include EventManagerInterface.h
-  - include "public IEventManagerInterface" in the class definition to make it also inherit from EventManagerInterface
-  - Declare the event object KillEvent based on the Delegate. This event will be fired by the delegate when the enemy is killed. 
-  - Declare the GetKillEvent() function that will override that of the event manager and get the kill event and store it inside the event object.
+  - #include "public IEventManagerInterface" in the class definition to make it also inherit from EventManagerInterface
+  - inherit from public AActor but also from public IEventManagerInterface
+  - Declare the delegate object KillEvent. This will be used to trigger the event when the enemy is killed. 
+  - Since this class is child of the interface class EventManagerInterface, it must Declare and Implement the GetKillEvent() function and override that of the parent class. This function will get and return the delegate object.
+  - Declare a Send() delegate function that will broadcast the kill event.
   - Declare a variable to store the score after each enemy is killed and expose it with UPROPERTY
   
 - Implementation File
-  - Define the GetKillEvent() function and make it return the kill event
-  - OnBeginPlay, Bind a function to the event that prints by how much the score increased everytime an enemy was killed
+  - Implement the GetKillEvent() function and make it return the kill event
+  - Implement the Send() function. Use the delegate object KillEvent to Bind a lambda function that prints by how much the score increased everytime an enemy was killed.
+  - Use the delegate object to broadcast the ScoreIncrease variable with the new score information
+  - Call Send() on BeginPlay()
 
 
 - Create enemy tag in project settings
@@ -64,19 +81,24 @@
 - Create an enemy tag inside this blueprint
 
 
-## Class GameMode
+## Listener Class MyGameMode
 - Create a C++ class type AGameModeBase
-- This is the class that will implement the function that will listen to the event
+- On project settings switch the game mode from the standar game mode to MyGameMode.
+- This is the class that will implement the function OnEnemyKilled() that will listen to the event
+
+- Header file
+  - Declare OnEnemyKilled() that will listen to the kill event
+  - Declare a variable for the current/initial score and expose it with UPROPERTY
+  - Declare a AEnemy instance that will be used to call the GetEnemyKillEvent() function that will get the delegate object
 
 - Implementation file
   - Find all enemy actors
-  - Iterate through all the enemies and Get the delegate instance from each one
-  - Use this delegate instance to bind to the function that increases the score
-  - Define the function that increases the score that will be called when the kill event occurs
+  - Iterate through all the enemies and Get the delegate instance from each one with the GetEnemyKilledEvent() function and store it inside a delegate local delegate object.
+  - Use this delegate object to bind the delegate function to the listener function that increases the score
+  - Define the OnEnemyKilled() function that increases the score and prints it and that will be called when the kill event occurs
 
 
-- Define Score increase in the Enemy BP
-- Define initial score in the GameMode BP
+- Inpute a value in the field Score increase in the Enemy BP and for initial score in the GameMode BP
 
 
 
