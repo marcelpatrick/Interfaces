@@ -19,7 +19,7 @@
 
 ## Preparation
 - The Actor dies and the HUD increases the counts for actors killed
-- Actors broadcasts death > Event manager registers the actors as invokers and the Hud as a listener > Hud listens to kill event and decreases the count. 
+- Actors broadcasts death > Event manager registers the actors as invokers and the Hud as a listener > Hud listens to kill event and increases the count. 
 - Use the interface to define the functions actors should have (broadcast kill message). Actors inherit from Interface but implement functions differently. 
 
 # Exercise:
