@@ -55,28 +55,42 @@ class INTERFACES_API UDelegateDeclarations : public UObject
     - GetEnemyKillEvent() is declared at the Interface, overriden and implemented at the Enemy class and called at the Event Manager GameMode class.
     - Gets the event broadcasted when enemy is killed
     - This function doesn't need to be implemented in this class but must be implemented in the classes that inherit from this one because it's a pure virtual function
+    
+```cpp
+// This class does not need to be modified.
+UINTERFACE(MinimalAPI)
+class UEventManagerInterface : public UInterface
+{
+	GENERATED_BODY()
+};
 
+/**
+ * 
+ */
+class INTERFACES_API IEventManagerInterface
+{
+	GENERATED_BODY()
 
-## Delegate Class: Enemy
+	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
+public:
+	virtual FEnemyKillEvent& GetEnemyKillEvent() PURE_VIRTUAL(IEventManagerInterface::GetEnemyKillEvent, return *(FEnemyKillEvent*) nullptr;);
+};
+```
+
+## Delegate Class: Enemy - BROADCAST
 - Create a C++ class type AActor
-- This class will inherit from the EventManagerInterface parent class
-- This class will get the delegate object with the function GetEnemyKillEvent() and use it to fire the kill event
-- This will be the class that will contain the delegate function Send() that will invoke / broadcast the kill event, therefore, this class should declare the delegate object FEnemyKillEvent in its header file. Only classes declaring the delegate object can use it to broadcast events. So insert the delegate object inside the class that will trigger the events. 
+- This class will inherit both from AActor and the EventManagerInterface parent class
+- This class that will trigger the delegate function Send() that will invoke / broadcast the kill event, therefore, this class should declare the delegate object FEnemyKillEvent in its header file. 
+- Only classes declaring the delegate object can use it to broadcast events. So insert the delegate object inside the class that will use it to trigger the events. 
 
 - Header File
   - #include EventManagerInterface.h
-  - #include "public IEventManagerInterface" in the class definition to make it also inherit from EventManagerInterface
-  - inherit from public AActor but also from public IEventManagerInterface
-  - Declare the delegate object KillEvent. This will be used to trigger the event when the enemy is killed. 
+  - add "public IEventManagerInterface" in the class definition to make it also inherit from EventManagerInterface
+  - Declare the delegate object KillEvent. This will be used to broadcast the event when the delegate function is triggered.
   - Since this class is child of the interface class EventManagerInterface, it must Declare and Implement the GetKillEvent() function and override that of the parent class. This function will get and return the delegate object.
   - Declare a Send() delegate function that will broadcast the kill event.
+  - Declare a timer function StartTimer() so that we wait a few seconds before calling the delegate functions to give it time for the binding to be processed.
   - Declare a variable to store the score after each enemy is killed and expose it with UPROPERTY
-  
-- Implementation File
-  - Implement the GetKillEvent() function and make it return the kill event
-  - Implement the Send() function. Use the delegate object KillEvent to Bind a lambda function that prints by how much the score increased everytime an enemy was killed.
-  - Use the delegate object to broadcast the ScoreIncrease variable with the new score information
-  - Call Send() on BeginPlay()
 
 ```cpp
 
@@ -98,7 +112,7 @@ public:
 
 	void Send();
 
-	FEnemyKillEvent GetEnemyKillEvent() override;
+	FEnemyKillEvent& GetEnemyKillEvent() override;
 
 protected:
 	// Called when the game starts or when spawned
@@ -120,14 +134,20 @@ private:
 
 
 };
-``` 
+```
+  
+- Implementation File
+  - Implement the GetKillEvent() function and make it return the kill event
+  - Implement the Send() function. Use the delegate object KillEvent to Bind a lambda function that prints by how much the score increased everytime an enemy was killed.
+  - Use the delegate object to broadcast the ScoreIncrease variable with the new score information
+  - Implement the StartTimer() function that will call the Send() function
+  - Call StartTimer() from BeginPlay()
 
 ```cpp
 
 #include "GameFramework/Actor.h"
 
 #include "Enemy.h"
-
 
 // Sets default values
 AEnemy::AEnemy()
@@ -156,7 +176,7 @@ void AEnemy::Tick(float DeltaTime)
 
 }
 
-FEnemyKillEvent AEnemy::GetEnemyKillEvent()
+FEnemyKillEvent& AEnemy::GetEnemyKillEvent()
 {
 	return KillEvent; 
 }
@@ -174,7 +194,7 @@ void AEnemy::Send()
 	// BROADCAST:
 
 	KillEvent.AddLambda( [this](int32 ScoreIncrease) { 
-		UE_LOG(LogTemp, Warning, TEXT("The Score increased by: %i "), ScoreIncrease);  		
+		UE_LOG(LogTemp, Warning, TEXT("You killed Enemy A. Kill points = %i "), ScoreIncrease);  		
 		});
 
 	KillEvent.Broadcast(ScoreIncrease);
@@ -186,27 +206,22 @@ void AEnemy::Send()
 - Create an enemy tag inside this blueprint
 
 
-## Listener Class: MyGameMode
+## Event Manager Class: MyGameMode - FIND, BIND, LISTEN
 - Create a C++ class type AGameModeBase
 - On project settings switch the game mode from the standar game mode to MyGameMode.
-- This is the class that will implement the function OnEnemyKilled() that will listen to the event
+- This is the class that will call GetEnemyKillEvent() and fetch the delegate object from the Enemy class
+- The delegate object will be user to BIND the delegate function to the callback function OnEnemyKilled()
+- This is the class that will declare the callback function OnEnemyKilled() that will listen to the event
 
 - Header file
   - Declare OnEnemyKilled() that will listen to the kill event
   - Declare a variable for the current/initial score and expose it with UPROPERTY
   - Declare a AEnemy instance that will be used to call the GetEnemyKillEvent() function that will get the delegate object
 
-- Implementation file
-  - Find all enemy actors
-  - Iterate through all the enemies and Get the delegate instance from each one with the GetEnemyKilledEvent() function and store it inside a delegate local delegate object.
-  - Use this delegate object to bind the delegate function to the listener function that increases the score
-  - Define the OnEnemyKilled() function that increases the score and prints it and that will be called when the kill event occurs
-
 ```cpp
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "EventManagerInterface.h" 
 #include "Enemy.h"
 #include "MyGameMode.generated.h"
 
@@ -234,10 +249,16 @@ private:
 	AEnemy* MyEnemy;
 
 };
-
 ```
--
+
+- Implementation file
+  - Find all enemy actors
+  - Iterate through all the enemies and Get the delegate instance from each one with the GetEnemyKilledEvent() function and store it inside a delegate local delegate object.
+  - Use this delegate object to bind the delegate function to the listener function that increases the score
+  - Define the OnEnemyKilled() function that will be called when the kill event occurs and increases the score and prints it and 
+
 ```cpp
+
 
 #include "MyGameMode.h"
 #include "EngineUtils.h" 
@@ -267,7 +288,7 @@ void AMyGameMode::BeginPlay()
 
         MyEnemy = Cast<AEnemy>(EnemyItr[0]);
 
-        FEnemyKillEvent KillEventAddress = MyEnemy->GetEnemyKillEvent();
+        FEnemyKillEvent& KillEventAddress = MyEnemy->GetEnemyKillEvent();
 
         UE_LOG(LogTemp, Warning, TEXT("This is the event address %p"), &KillEventAddress);
 
@@ -282,7 +303,7 @@ void AMyGameMode::BeginPlay()
 
 }
 
-// RECEIVE:
+// LISTEN:
 void AMyGameMode::OnEnemyKilled(int32 ScoreIncrease)
 {
     CurrentScore += ScoreIncrease;
