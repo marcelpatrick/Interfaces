@@ -1,4 +1,4 @@
-# Interfaces / Refactoring Teddy Bear Destruction
+# Interfaces
 
 # Interfaces Definition
 - Interfaces are classes in which all of its functions are pure virtual.
@@ -9,22 +9,23 @@
     - pure virtual / abstract functions are used when we need to create functions that we know must exist in the child classes but their implementaton varies according to each child class. Eg. All animals move but each type of animal move in a different way. Animals class has a Move() function. A bird can implement Move() by Move() { Fly() } a Fish by Move() { Swim() } and a Dog by Move() { Run() }. That's why they cannot be defined in the parent class, must be implemented in the child classes and must override the parent class. 
 
 
-# Exercise
+# Project:
+- Create a Enemy classes that broadcast an event when they get killed. Enemy classes should be based on an Interface class that establishes the main functionalities enemies must implement. The kill event should be received by an event manager class (GameMode) which will execute a listener function as a result. 
 
 ## Ingridients
-- An actor interface (parent class)
-- 3 Actors (child classes)
-- A HUD 
-- An Event Manager
+- A Delegate Declarations UObject class
+- An UInterface (parent class)
+- Enemy AActors (child classes)
+- An Event Manager AGameMode class
 
 ## Preparation
-- The Actor dies and the HUD increases the counts for actors killed
-- Actors broadcasts death > Event manager registers the actors as invokers and the Hud as a listener > Hud listens to kill event and increases the count. 
+- The Actor dies and the score variable increases the counts for actors killed and prints the updated score
+- Actors broadcasts death > Event manager uses the delegate object to bind the invoker function to the listener function > Function listens to kill event and increases the count. 
 - Use the interface to define the functions actors should have (broadcast kill message). Actors inherit from Interface but implement functions differently. 
 
 # Exercise:
 
-## Class Delegates Declarations
+## Class: Delegates Declarations
 - Create a C++ class type UObject
 - This class will declare the Delegate that will fire the Kill Event - Declare all the delegates in this class
 
@@ -43,13 +44,15 @@ class INTERFACES_API UDelegateDeclarations : public UObject
 ```
 
 
-## Class Event Manager / Interface
-- Create a C++ class type Unreal Class : Interface
-- This class will declare the function that gets the delegate object that be used to fire the kill event. 
+## Class Event Manager Interface
+- Create a C++ class type UInterface
+- The interface class will work as a template class that determines which functions every enemy will need to implement.
+- This class will declare the function that gets the delegate object that will be used to fire the kill event. 
 - This function will need to be implemented in the child classes Enemy
 
 - Header file
-  - Declare a pure virtual function GetKillEvent() that returns the delegate object FEnemyKilled
+  - Declare a pure virtual function GetEnemyKillEvent() that returns the delegate object FEnemyKillEvent
+    - GetEnemyKillEvent() is declared at the Interface, overriden and implemented at the Enemy class and called at the Event Manager GameMode class.
     - Gets the event broadcasted when enemy is killed
     - This function doesn't need to be implemented in this class but must be implemented in the classes that inherit from this one because it's a pure virtual function
 
